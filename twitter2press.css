@@ -1,0 +1,34 @@
+#twitter2press-gallery .mainimg IMG {
+	width: 100%;
+}
+
+#twitter2press-gallery UL  {
+	list-style-type: none;
+	width: 100%;
+}
+
+#twitter2press-gallery UL LI {
+	display: inline-table;
+	padding: 5px;
+	width: 20%;
+}
+
+#twitter2press-gallery UL LI:before {
+	content:"";
+}
+
+
+
+#twitter2press-gallery UL LI IMG {
+	width: 100%;
+}
+
+#twitter2press-gallery .caption {
+	text-align:center;
+	padding:10px;
+}
+#twitter2press-gallery .datetime {
+	font-style:italic;
+	text-align:right;
+}
+
