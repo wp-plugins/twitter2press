@@ -4,7 +4,7 @@
 Plugin Name: Twitter2Press
 Plugin URI: http://projets.lesniak.fr/twitter2press
 Description: Twitter2Press is the Wordpress Plug-In that allow you to post your Twitter Images to your WordPress by using Tweetie client
-Version: 1.0
+Version: 1.0.1
 Author: Mathieu LESNIAK
 Author URI: http://www.lesniak.fr/
 
@@ -170,6 +170,7 @@ function load_gallery_content($content) {
 	else {
 		$caption = $img->twitt;
 	}
+	$caption = str_replace('&amp;apos;', "'", $caption);
 
 	$output  = '<div id="twitter2press-gallery">'; 
 	if ( $img != null ) {
