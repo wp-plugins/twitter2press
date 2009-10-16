@@ -4,7 +4,7 @@
 Plugin Name: Twitter2Press
 Plugin URI: http://projets.lesniak.fr/twitter2press
 Description: Twitter2Press is the Wordpress Plug-In that allow you to post your Twitter Images to your WordPress by using Tweetie client
-Version: 1.0.1
+Version: 1.0.2
 Author: Mathieu LESNIAK
 Author URI: http://www.lesniak.fr/
 
@@ -34,13 +34,29 @@ if (!defined('GALLERYPATH')) {
 	define('GALLERYPATH','/wp-content/twitter2press');
 }
 
+if ( !defined('T2P_CHMOD_DIR') ) {
+	define('T2P_CHMOD_DIR', 0755 );
+}
+
 $data = array(
-	'page_id'				=> 0,
-	'setup'					=> 0,
-	'twitter_login'			=> '',
-	'twitter_password'		=> ''
+	'page_id'					=> 0,
+	'setup'						=> 0,
+	'twitter_login'				=> '',
+	'twitter_password'			=> '',
+	'url_shortener'				=> '',
+	'url_shortener_login' 		=> '',
+	'url_shortener_password' 	=> '',
+	'url_shortener_endpoint'	=> ''
 	);
 
+$shortening_services = array(
+							 'trim' 	=> array('key' => 0, 'name' => 'Tr.im'),
+							 'isgd'		=> array('key' => 0, 'name' => 'Is.gd'),
+							 'tinyurl' 	=> array('key' => 0, 'name' => 'Tiny URL'),
+							 'bitly' 	=> array('key' => 0, 'name' => 'Bit.ly'),
+							 'jmp'		=> array('key' => 0, 'name' => 'j.mp'),
+							 'yourls' 	=> array('key' => 1, 'name' => 'Yourls private URL shortener')
+							);
 add_option('t2p_settings',$data,'Twitter2Press Options');
 
 $t2p_settings = get_option('t2p_settings');
@@ -53,33 +69,56 @@ function twitter2press_menu() {
 }
 
 function twitter2press_options() {
-	Global $t2p_settings;
+	Global $t2p_settings, $shortening_services;
 	
 	if ( $t2p_settings['setup'] == 0 ) {
 		$t2p_settings['setup'] = 1;
 		update_option('t2p_settings', $t2p_settings);
 
 	}
+	if ( $t2p_settings['url_shortener'] == '' ) {
+		$t2p_settings['url_shortener'] = 'tinyurl';
+	}
 	if ( isset($_POST['t2p_submit']) ) {
-		$t2p_settings['twitter_login'] 		= $_POST['twitter_login'];
-		$t2p_settings['twitter_password'] 	= $_POST['twitter_password'];
-		$t2p_settings['page_id'] 			= $_POST['page_id'];
-	
+		$t2p_settings['twitter_login'] 			= $_POST['twitter_login'];
+		$t2p_settings['twitter_password'] 		= $_POST['twitter_password'];
+		$t2p_settings['page_id'] 				= $_POST['page_id'];
+		$t2p_settings['url_shortener']			= $_POST['url_shortener'];
+		$t2p_settings['url_shortener_login']	= $_POST['shortener_login'];
+		$t2p_settings['url_shortener_password']	= $_POST['shortener_password'];
+		$t2p_settings['url_shortener_endpoint']	= $_POST['shortener_endpoint'];
+		
 		update_option('t2p_settings', $t2p_settings);
 	}
 	
 	
 		if(is_writable(UPLOAD_DIRECTORY)) {
 			if(!is_dir(UPLOAD_DIRECTORY . 'twitter2press')) {
-				mkdir(UPLOAD_DIRECTORY . 'twitter2press');
+				mkdir(UPLOAD_DIRECTORY . 'twitter2press', T2P_CHMOD_DIR);
 			}
 			
 			if(!is_dir(UPLOAD_DIRECTORY . 'twitter2press/tn')) {
-				mkdir(UPLOAD_DIRECTORY . 'twitter2press/tn');
+				mkdir(UPLOAD_DIRECTORY . 'twitter2press/tn', T2P_CHMOD_DIR);
 			}
 		}
 		
 		$pages = get_pages(); 
+		
+		echo '<script type="text/javascript">';
+		echo '	var shortening_services = [];';
+		while ( list($key, $val) = each($shortening_services) ) {
+			echo 'shortening_services["'.$key.'"] = \''.$val['key'].'\';';
+		}	
+
+		echo '	function check_key(elt) {';
+		echo '		if (shortening_services[elt.options[elt.selectedIndex].value] == 1 ) {';
+		echo '			document.getElementById(\'shortencred\').style.display = \'block\';';
+		echo '		}';
+		echo '		else {';
+		echo '			document.getElementById(\'shortencred\').style.display = \'none\';';
+		echo '		}';
+		echo '	}';
+		echo '</script>';
 		
 		echo '<form action="" method="post">';
 		echo '<div class="wrap" id="t2p-options">';
@@ -110,7 +149,36 @@ function twitter2press_options() {
 		echo '		<td><label for="twitter_password">Your twitter password :</label></td>';
 		echo '		<td><input type="password" name="twitter_password" value="'.$t2p_settings['twitter_password'].'" /></td>';
 		echo '	</tr>';
-		echo '	<tr>';
+		echo ' <tr>';
+		echo '		<td><label for="urlshortener">URL Shortener :</label></td>';
+		echo '		<td><select name="url_shortener" onchange="check_key(this)">';
+		reset($shortening_services);
+		while ( list($key, $val) = each($shortening_services) ) {
+			$selected = ($key == $t2p_settings['url_shortener']) ? 'selected' : '';
+			echo '<option value="'.$key.'" '.$selected.'>'.$val['name'].'</option>';
+		}
+		echo '			</select></td>';
+		echo '	</tr>';
+
+		$style = $shortening_services[$t2p_settings['url_shortener']]['key'] ? 'style="display: block"' : 'style="display: none"';
+
+		echo ' <tr style="padding-left: 50px;">';
+		echo '		<td></td><td><table id="shortencred" '.$style.'>';
+		echo '		<tr>';
+		echo '			<td><label for="shortener_login">API key / login</label></td>';
+		echo '			<td><input type="text" name="shortener_login" value="'.$t2p_settings['url_shortener_login'].'" /></td>';
+		echo '		</tr>';
+		echo '		<tr>';
+		echo '			<td><label for="shortener_password">API password</label></td>';
+		echo '			<td><input type="password" name="shortener_password" value="'.$t2p_settings['url_shortener_password'].'" /></td>';
+		echo '		</tr>';
+		echo '		<tr>';
+		echo '			<td><label for="shortener_endpoint">API endpoint (http://yoursite/yourls-api.php)</label></td>';
+		echo '			<td><input type="text" name="shortener_endpoint" value="'.$t2p_settings['url_shortener_endpoint'].'" /></td>';
+		echo '		</tr>';
+		echo '		</table></td>';
+		echo ' </tr>';
+		echo ' <tr>';
 		echo '		<td></td>';
 		echo '		<td><input type="submit" name="t2p_submit" value="Save settings" class="button-primary"/></td>';
 		echo '	</tr>';
@@ -157,7 +225,7 @@ function load_gallery_content($content) {
 		$img = $wpdb->get_row($wpdb->prepare("SELECT *, UNIX_TIMESTAMP(time) AS ts FROM $table ORDER BY id DESC LIMIT 0,1"));
 	}
 	if ( $img->updated == 0 ) {
-		$content_search = implode('', file('http://search.twitter.com/search.atom?q=from%3A'.$t2p_settings['twitter_login'].'%20'.$img->shortened));
+		$content_search = wp_remote_fopen('http://search.twitter.com/search.atom?q=from%3A'.$t2p_settings['twitter_login'].'%20'.$img->shortened);
 		preg_match('|<content type="html">(.*)</content>|Umis', $content_search, $matches);
 		if ( $matches[1] != '' ) {
 			$from = array('&lt;', '&quot;', '&gt;');
@@ -208,6 +276,7 @@ function twitter2press_upload() {
 	Global $t2p_settings, $_POST, $_FILES, $wpdb;
 	
 
+	
 
 	// Only is a file is uploaded
 	if ( isset($_FILES['media']) ) {
@@ -246,8 +315,49 @@ function twitter2press_upload() {
 						$wpdb->query($wpdb->prepare("INSERT INTO $table (name, twitt) VALUES ('%s', NULL)", time().basename($f_name)));
 						$id = $wpdb->insert_id;
 						$final_url = get_option ( 'siteurl' ) . '?page_id=' . $t2p_settings['page_id'] . '&image_id=' . $id;
-						$shortened = implode('', file('http://tinyurl.com/api-create.php?url='.urlencode($final_url)));
+
+
+						if ( $t2p_settings['url_shortener'] == 'isgd' ) {
+							$shortened = wp_remote_fopen('http://is.gd/api.php?longurl='.urlencode($final_url));							
+						}
+						else if ( $t2p_settings['url_shortener'] == 'trim' ) {
+							$xml_shortened = wp_remote_fopen('http://api.tr.im/api/trim_url.xml?url='.urlencode($final_url));
+							preg_match('|<url>(.*)</url>|Umis', $xml_shortened, $matches);
+							
+							$shortened = $matches[1];
+						}
+						// Bit.ly | j.mp
+						else if ( $t2p_settings['url_shortener'] == 'bitly'  ) {
+							$xml_shortened = wp_remote_fopen('http://api.bit.ly/shorten?version=2.0.1&longUrl='.urlencode($final_url).'&login=bitlyapidemo&apiKey=R_0da49e0a9118ff35f52f629d2d71bf07&format=xml');
+							preg_match('|<shortUrl>(.*)</shortUrl>|Umis', $xml_shortened, $matches);
+							
+							$shortened = $matches[1];
+						}
+						else if ( $t2p_settings['url_shortener'] == 'jmp') {
+							$xml_shortened = wp_remote_fopen('http://api.j.mp/shorten?version=2.0.1&longUrl='.urlencode($final_url).'&login=bitlyapidemo&apiKey=R_0da49e0a9118ff35f52f629d2d71bf07&format=xml');
+							preg_match('|<shortUrl>(.*)</shortUrl>|Umis', $xml_shortened, $matches);
+							
+							$shortened = $matches[1];
+							
+						}
+						else if ( $t2p_settings['url_shortener'] == 'yourls' ) {
+							$args['body']['url'] = $final_url;
+							$args['body']['keyword'] = '';
+							$args['body']['format'] = 'simple';
+							$args['body']['action'] = 'shorturl';
+							$args['body']['username'] = $t2p_settings['url_shortener_login'];
+							$args['body']['password'] = $t2p_settings['url_shortener_password'];
 						
+							$xml_shortened = wp_remote_post($t2p_settings['url_shortener_endpoint'], $args);
+							
+						
+							$shortened = $xml_shortened['body'];
+							
+						}
+						// Default case : tinyurl
+						else {
+							$shortened = wp_remote_fopen('http://tinyurl.com/api-create.php?url='.urlencode($final_url));
+						}
 						
 						echo '<mediaurl>'.$shortened.'</mediaurl>'."\n";
 						
@@ -268,7 +378,6 @@ function twitter2press_upload() {
 				
 		}
 		
-
 		exit;
 	}
 
@@ -279,7 +388,7 @@ function twitter2press_upload() {
 
 function twitter2press_admin_notice() {
 	Global $t2p_settings;
-	
+
 	if ( $t2p_settings['setup'] != 1 ) {
 		echo '<div class="error"><p><b>'.('Twitter2Press is not configured. Please go to the <a href="'.admin_url( 'options-general.php?page=twitter2press/twitter2press.php' ).'">plugin admin page</a> to configure it. ' ) . '</b></p></div>';
 	}
@@ -315,16 +424,40 @@ function twitter2press_activate() {
 	// Creating directories
 	if(is_writable(UPLOAD_DIRECTORY)) {
 		if(!is_dir(UPLOAD_DIRECTORY . 'twitter2press')) {
-			mkdir(UPLOAD_DIRECTORY . 'twitter2press');
+			mkdir(UPLOAD_DIRECTORY . 'twitter2press', T2P_CHMOD_DIR);
 		}
 		
 		if(!is_dir(UPLOAD_DIRECTORY . 'twitter2press/tn')) {
-			mkdir(UPLOAD_DIRECTORY . 'twitter2press/tn');
+			mkdir(UPLOAD_DIRECTORY . 'twitter2press/tn', T2P_CHMOD_DIR);
 		}
 	}
 
 }
 register_activation_hook( __FILE__, 'twitter2press_activate' );
 
+/*function remote_access($url) {
+	// Ugly one, but file is not allowed everywhere
+	if ( function_exists('curl_init') ) {
 
+		$ch = curl_init();
+		curl_setopt($ch,CURLOPT_URL,$url);
+		curl_setopt($ch,CURLOPT_USERAGENT, "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2");
+		curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,2);
+		curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
+		$buffer = curl_exec($ch);
+		curl_close($ch);
+		
+		if ( $buffer == '' ) {
+
+			$buffer = implode('', file($url));
+		}
+	}
+	else {
+
+		$buffer = implode('', file($url));
+	}
+		
+	return $buffer;	
+}
+*/
 ?>
