@@ -4,8 +4,8 @@ Donate link:
 Tags: Twitter, Wordpress, image hosting, twitpic, tweet, tweetie, twittelator, tweetpress
 Requires at least: 2.3
 Tested up to: 2.8.4
-Version: 1.0.1
-Stable Tag: 1.0.1
+Version: 1.0.2
+Stable Tag: 1.0.2
 
 Use your Wordpress blog to host the photos you post to Twitter! 
 
@@ -48,6 +48,11 @@ Now everytime you'll upload a picture from Tweetie, the link will point to YOUR 
 Live example on [this gallery](http://newsdegeek.com/galerie).
 
 == Changelog ==
+
+= 1.0.2 = 
+* Support for more URL Shorteners : tr.im, is.gd, tinyURL, bit.ly, j.mp and YOURLS (http://yourls.org/) private shortener
+* changed the method for URL accessing causing error on some wordpress setups (hope so :p)
+* added chmod 0755 value for created directories
 
 = 1.0.1 =
 * Support for &apos; character in tweets
