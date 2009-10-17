@@ -4,7 +4,7 @@
 Plugin Name: Twitter2Press
 Plugin URI: http://projets.lesniak.fr/twitter2press
 Description: Twitter2Press is the Wordpress Plug-In that allow you to post your Twitter Images to your WordPress by using Tweetie client
-Version: 1.0.2
+Version: 1.0.3
 Author: Mathieu LESNIAK
 Author URI: http://www.lesniak.fr/
 
@@ -38,6 +38,11 @@ if ( !defined('T2P_CHMOD_DIR') ) {
 	define('T2P_CHMOD_DIR', 0755 );
 }
 
+if ( !defined('T2P_ADMIN_PER_PAGE') ) {
+	define('T2P_ADMIN_PER_PAGE', 20 );
+}
+
+
 $data = array(
 	'page_id'					=> 0,
 	'setup'						=> 0,
@@ -46,7 +51,8 @@ $data = array(
 	'url_shortener'				=> '',
 	'url_shortener_login' 		=> '',
 	'url_shortener_password' 	=> '',
-	'url_shortener_endpoint'	=> ''
+	'url_shortener_endpoint'	=> '', 
+	'nb_pic_per_page'			=> 5
 	);
 
 $shortening_services = array(
@@ -69,16 +75,29 @@ function twitter2press_menu() {
 }
 
 function twitter2press_options() {
-	Global $t2p_settings, $shortening_services;
-	
+	Global $t2p_settings, $shortening_services, $wpdb;
+
 	if ( $t2p_settings['setup'] == 0 ) {
 		$t2p_settings['setup'] = 1;
 		update_option('t2p_settings', $t2p_settings);
-
 	}
+	
+	// Navigation offset
+	if ( isset($_GET['offset']) && $_GET['offset'] != '' ) {
+		$offset = $_GET['offset'];
+	}
+	else {
+		$offset = 0;
+	}
+	
 	if ( $t2p_settings['url_shortener'] == '' ) {
 		$t2p_settings['url_shortener'] = 'tinyurl';
 	}
+	
+	if ( $t2p_settings['nb_pic_per_page'] == '' ) {
+		$t2p_settings['nb_pic_per_page'] = 5;
+	}
+	
 	if ( isset($_POST['t2p_submit']) ) {
 		$t2p_settings['twitter_login'] 			= $_POST['twitter_login'];
 		$t2p_settings['twitter_password'] 		= $_POST['twitter_password'];
@@ -87,7 +106,7 @@ function twitter2press_options() {
 		$t2p_settings['url_shortener_login']	= $_POST['shortener_login'];
 		$t2p_settings['url_shortener_password']	= $_POST['shortener_password'];
 		$t2p_settings['url_shortener_endpoint']	= $_POST['shortener_endpoint'];
-		
+		$t2p_settings['nb_pic_per_page']		= $_POST['nb_pic_per_page'];
 		update_option('t2p_settings', $t2p_settings);
 	}
 	
@@ -118,11 +137,16 @@ function twitter2press_options() {
 		echo '			document.getElementById(\'shortencred\').style.display = \'none\';';
 		echo '		}';
 		echo '	}';
+		echo '	function do_confirm() {';
+		echo '		result = confirm(\'Are you sure you want to delete this picture ?\');';
+		echo '		return result;';
+		echo '	}';
 		echo '</script>';
 		
 		echo '<form action="" method="post">';
 		echo '<div class="wrap" id="t2p-options">';
 		echo '	<h2>Twitter2Press Options page</h2>';
+		echo '	<h3>Settings</h3>';
 		echo '	<table cellpadding="15" cellspacing="15">';
 		echo '	<tr>';
 		echo '		<td>Gallery page :</td>';
@@ -139,6 +163,10 @@ function twitter2press_options() {
 		
 		echo '				</select>';
 		echo '		</td>';
+		echo '	</tr>';
+		echo '	<tr>';
+		echo '		<td>Number of thumbnails per page :</td>';
+		echo '		<td><input type="text" name="nb_pic_per_page" value="'.$t2p_settings['nb_pic_per_page'].'" /></td>';
 		echo '	</tr>';
 		
 		echo '	<tr>';
@@ -163,28 +191,59 @@ function twitter2press_options() {
 		$style = $shortening_services[$t2p_settings['url_shortener']]['key'] ? 'style="display: block"' : 'style="display: none"';
 
 		echo ' <tr style="padding-left: 50px;">';
-		echo '		<td></td><td><table id="shortencred" '.$style.'>';
-		echo '		<tr>';
-		echo '			<td><label for="shortener_login">API key / login</label></td>';
-		echo '			<td><input type="text" name="shortener_login" value="'.$t2p_settings['url_shortener_login'].'" /></td>';
-		echo '		</tr>';
-		echo '		<tr>';
-		echo '			<td><label for="shortener_password">API password</label></td>';
-		echo '			<td><input type="password" name="shortener_password" value="'.$t2p_settings['url_shortener_password'].'" /></td>';
-		echo '		</tr>';
-		echo '		<tr>';
-		echo '			<td><label for="shortener_endpoint">API endpoint (http://yoursite/yourls-api.php)</label></td>';
-		echo '			<td><input type="text" name="shortener_endpoint" value="'.$t2p_settings['url_shortener_endpoint'].'" /></td>';
-		echo '		</tr>';
-		echo '		</table></td>';
+		echo '		<td></td>';
+		echo '		<td>';
+		echo '			<table id="shortencred" '.$style.'>';
+		echo '			<tr>';
+		echo '				<td><label for="shortener_login">API key / login</label></td>';
+		echo '				<td><input type="text" name="shortener_login" value="'.$t2p_settings['url_shortener_login'].'" /></td>';
+		echo '			</tr>';
+		echo '			<tr>';
+		echo '				<td><label for="shortener_password">API password</label></td>';
+		echo '				<td><input type="password" name="shortener_password" value="'.$t2p_settings['url_shortener_password'].'" /></td>';
+		echo '			</tr>';
+		echo '			<tr>';
+		echo '				<td><label for="shortener_endpoint">API endpoint (http://yoursite/yourls-api.php)</label></td>';
+		echo '				<td><input type="text" name="shortener_endpoint" value="'.$t2p_settings['url_shortener_endpoint'].'" /></td>';
+		echo '			</tr>';
+		echo '			</table>';
+		echo '		</td>';
 		echo ' </tr>';
 		echo ' <tr>';
-		echo '		<td></td>';
-		echo '		<td><input type="submit" name="t2p_submit" value="Save settings" class="button-primary"/></td>';
+		echo '		<td colspan="2" align="center"><input type="submit" name="t2p_submit" value="Save settings" class="button-primary"/></td>';
 		echo '	</tr>';
 		
 		echo '	</table>';
 		echo '</form>';
+		echo '<hr/>';
+		echo '<h3>Manage pictures</h3>';
+		echo 'Click a picture to delete it : <br/>';
+		$table = $wpdb->prefix . "twitter2press";
+
+		if ( isset($_GET['delete']) && $_GET['delete'] != '' ) {
+			$wpdb->query($wpdb->prepare("DELETE FROM $table WHERE id='%d'", $_GET['delete']));
+		}
+
+		$nb_records = $wpdb->get_var("SELECT COUNT(*) FROM $table");
+		$nb_pages 	= ceil($nb_records / T2P_ADMIN_PER_PAGE);
+		$page_offset = ($offset / T2P_ADMIN_PER_PAGE) + 1;
+
+		$images = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table ORDER BY id DESC LIMIT $offset,%d", T2P_ADMIN_PER_PAGE));
+		foreach ( $images as $image ) {
+			echo '<a href="'.admin_url( 'options-general.php?page=twitter2press/twitter2press.php&offset='.$offset.'&delete='.$image->id ).'" onclick="return do_confirm();"><img src="'.get_option ( 'siteurl' ).GALLERYPATH.'/tn/'.$image->name.'" style="padding: 5px"/></a>';
+		}
+
+		echo '	<div style="text-align:center">Displaying page '.$page_offset.' on '.$nb_pages;
+		echo '	<br/>';
+		if ( $offset > 0 ) {
+			echo '	<a href="'.admin_url( 'options-general.php?page=twitter2press/twitter2press.php&offset='.($offset-T2P_ADMIN_PER_PAGE) ).'">&laquo; previous page</a>';
+		}
+		if ( ($offset + T2P_ADMIN_PER_PAGE) <= $nb_records ) {
+			echo '	<a href="'.admin_url( 'options-general.php?page=twitter2press/twitter2press.php&offset='.($offset+T2P_ADMIN_PER_PAGE) ).'">next page &raquo;</a>';
+		}
+		echo '	</div>';
+		echo '<hr/>';
+		echo '<div style="text-align:center">Follow <a href="http://twitter.com/mathieulesniak">@mathieulesniak on Twitter</a></div>';
 }
 
 
@@ -240,17 +299,20 @@ function load_gallery_content($content) {
 	}
 	$caption = str_replace('&amp;apos;', "'", $caption);
 
+	$per_page = ( $t2p_settings['nb_pic_per_page'] != '' ) ? $t2p_settings['nb_pic_per_page'] : 10;
+
 	$output  = '<div id="twitter2press-gallery">'; 
 	if ( $img != null ) {
 		$output .= '	<div class="mainimg"><img src="'.get_option ( 'siteurl' ).GALLERYPATH.'/'.$img->name.'" /></div>';
 		$output .= '	<div class="caption">'.(utf8_decode($caption)).'</div>'."\n";
 		$output .= '	<div class="datetime">This image was twitted on '.date('l, F jS, Y @ H:i', $img->ts).'</div>';
 		
-		$old_images = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table WHERE id != %d ORDER BY id DESC LIMIT 5", $img->id));
+		$old_images = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table WHERE id != %d ORDER BY id DESC LIMIT %d", $img->id, $per_page));
 	}
 	else {
-		$old_images = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table ORDER BY id DESC LIMIT 5"));
+		$old_images = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table ORDER BY id DESC LIMIT %d", $per_page));
 	}
+
 
 	
 	$page = ( $t2p_settings['page_id'] != 0 ) ? '?page_id='.$t2p_settings['page_id'].'&' : '?';
@@ -262,9 +324,9 @@ function load_gallery_content($content) {
 		$output .= '</ul>'."\n";
 	}
 	
-
-
+	$output .= '	<div class="breaker"></div>';
 	$output .= '</div>';
+	
 	return $output.$content;
 }
 
@@ -434,30 +496,4 @@ function twitter2press_activate() {
 
 }
 register_activation_hook( __FILE__, 'twitter2press_activate' );
-
-/*function remote_access($url) {
-	// Ugly one, but file is not allowed everywhere
-	if ( function_exists('curl_init') ) {
-
-		$ch = curl_init();
-		curl_setopt($ch,CURLOPT_URL,$url);
-		curl_setopt($ch,CURLOPT_USERAGENT, "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2");
-		curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,2);
-		curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
-		$buffer = curl_exec($ch);
-		curl_close($ch);
-		
-		if ( $buffer == '' ) {
-
-			$buffer = implode('', file($url));
-		}
-	}
-	else {
-
-		$buffer = implode('', file($url));
-	}
-		
-	return $buffer;	
-}
-*/
 ?>
