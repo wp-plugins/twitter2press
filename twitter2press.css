@@ -8,9 +8,15 @@
 }
 
 #twitter2press-gallery UL LI {
-	display: inline-table;
-	padding: 5px;
+	float :left;
+	padding: 0 5px 5px 5px;
 	width: 20%;
+}
+
+#twitter2press-gallery .breaker {
+	clear: both;
+	height: 1px;
+	overflow: hidden;
 }
 
 #twitter2press-gallery UL LI:before {
