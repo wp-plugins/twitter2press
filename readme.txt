@@ -3,9 +3,9 @@ Contributors: mathieulesniak
 Donate link: 
 Tags: Twitter, Wordpress, image hosting, twitpic, tweet, tweetie, twittelator, tweetpress
 Requires at least: 2.3
-Tested up to: 2.8.4
-Version: 1.0.3
-Stable Tag: 1.0.3
+Tested up to: 2.8.5
+Version: 1.0.4
+Stable Tag: 1.0.4
 
 Use your Wordpress blog to host the photos you post to Twitter! 
 
@@ -48,6 +48,18 @@ Now everytime you'll upload a picture from Tweetie, the link will point to YOUR 
 Live example on [this gallery](http://newsdegeek.com/galerie).
 
 == Changelog ==
+
+= 1.0.4 =
+* Brand new image management : images are now considered as attachments. 
+* Each image can now have its own comments.
+* Each image can now be reused in Wordpress.
+* Can now edit each image title & caption.
+* No more directory creation and chmod problems.
+* Added a "Retweet this image" link below picture.
+* Can define a custom CSS for the gallery. Just put a "twitter2press.css" file in your current theme directory. Default CSS can be found at /wp-content/plugins/twitter2press/twitter2press.css
+* Fixed image width issue, but not on Internet Explorer 6. Sorry guys :-)
+* Fixed a bug with the & character.
+
 
 = 1.0.3 =
 * Can now delete images from the admin panel

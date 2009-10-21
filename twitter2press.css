@@ -1,5 +1,10 @@
+#twitter2press-gallery .mainimg {
+	text-align: center;
+}
+
 #twitter2press-gallery .mainimg IMG {
 	width: 100%;
+	max-width: 320px;
 }
 
 #twitter2press-gallery UL  {
@@ -11,6 +16,9 @@
 	float :left;
 	padding: 0 5px 5px 5px;
 	width: 20%;
+	max-width: 100px;
+	min-width: 100px;
+
 }
 
 #twitter2press-gallery .breaker {
@@ -36,5 +44,9 @@
 #twitter2press-gallery .datetime {
 	font-style:italic;
 	text-align:right;
+}
+#twitter2press-gallery .retweet {
+	text-align:center;
+	padding: 10px;
 }
 
