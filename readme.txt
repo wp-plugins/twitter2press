@@ -4,8 +4,8 @@ Donate link:
 Tags: Twitter, Wordpress, image hosting, twitpic, tweet, tweetie, twittelator, tweetpress
 Requires at least: 2.3
 Tested up to: 2.8.5
-Version: 1.0.4
-Stable Tag: 1.0.4
+Version: 1.0.5
+Stable Tag: 1.0.5
 
 Use your Wordpress blog to host the photos you post to Twitter! 
 
@@ -48,6 +48,10 @@ Now everytime you'll upload a picture from Tweetie, the link will point to YOUR 
 Live example on [this gallery](http://newsdegeek.com/galerie).
 
 == Changelog ==
+
+
+= 1.0.5 = 
+* Fix retweet link, missing tweet text
 
 = 1.0.4 =
 * Brand new image management : images are now considered as attachments. 
